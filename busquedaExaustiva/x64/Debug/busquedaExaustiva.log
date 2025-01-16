@@ -1,11 +1,11 @@
 ﻿  busquedaExaustiva.cpp
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244: 'argument': conversion from '_Rep' to '_Ty', possible loss of data
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         with
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         [
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:             _Rep=__int64
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         ]
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         and
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         [
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:             _Ty=double
-C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(93,41): warning C4244:         ]
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244: 'argument': conversion from '_Rep' to '_Ty', possible loss of data
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         with
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         [
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:             _Rep=__int64
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         ]
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         and
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         [
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:             _Ty=double
+C:\Users\gamur\source\repos\busquedaExaustiva\busquedaExaustiva\busquedaExaustiva.cpp(100,41): warning C4244:         ]
   busquedaExaustiva.vcxproj -> C:\Users\gamur\source\repos\busquedaExaustiva\x64\Debug\busquedaExaustiva.exe

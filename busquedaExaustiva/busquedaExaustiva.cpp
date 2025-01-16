@@ -4,7 +4,6 @@
 #include <omp.h>
 #include <atomic>
 #include <mutex>
-#include <queue>
 #include <memory>
 #include <thread>
 
