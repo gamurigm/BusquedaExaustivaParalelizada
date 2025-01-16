@@ -13,20 +13,28 @@ struct ResultadoCombinacion {
     std::mutex mtx;
     void agregar(const std::vector<int>& comb) {
         std::lock_guard<std::mutex> lock(mtx);
+        
+        // Automáticamente bloquea el mutex al construirse 
+        // y desbloquea el mutex al destruirse (cuando termina el scope)
+      
         std::cout << "{ ";
-        for (int num : comb) {
+        for (int num : comb) {    // Todo este bloque está protegido por el mutex
             std::cout << num << " ";
         }
         std::cout << "}" << std::endl;
-    }
+    }// Evita que las salidas de diferentes hilos se mezclen
 };
 
 class BuscadorCombinaciones {
 private:
     std::shared_ptr<ResultadoCombinacion> resultados;
-    const std::vector<int>& numeros;
-    std::atomic<size_t> combinacionesEncontradas{ 0 };
-    const size_t CHUNK_SIZE = 1000;
+    
+    // Permite compartir de manera segura el objeto ResultadoCombinacion entre hilos
+    // Libera automáticamente la memoria cuando ya no se necesita
+
+    const std::vector<int>& numeros; //Evita copias innecesarias
+    std::atomic<size_t> combinacionesEncontradas{ 0 }; // Contador atómico para las combinaciones encontradas
+    const size_t CHUNK_SIZE = 1000; //Constante para optimizar el balanceo de carga
 
     void buscarCombinacionesRecursivo(int objetivo, std::vector<int>& combinacion, int indice) {
         if (objetivo == 0) {
@@ -43,8 +51,8 @@ private:
                 return;
             }
         }
-        if (combinacion.capacity() < numeros.size()) {
-            combinacion.reserve(numeros.size());
+        if (combinacion.capacity() < numeros.size()) { // Reserva memoria anticipadamente
+            combinacion.reserve(numeros.size());       // Evita realocaciones costosas durante la recursión
         }
         combinacion.push_back(numeros[indice]);
         buscarCombinacionesRecursivo(objetivo - numeros[indice], combinacion, indice + 1);
