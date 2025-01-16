@@ -1,70 +1,154 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include <omp.h> // Para OpenMP
+#include <omp.h>
+#include <atomic>
+#include <mutex>
+#include <queue>
+#include <memory>
+#include <thread>
 
-// Función para buscar combinaciones únicas que sumen un objetivo
-void buscarCombinacionesUnicas(const std::vector<int>& numeros, int objetivo, std::vector<int>& combinacion, int indice) {
-    if (objetivo == 0) {
-        // Imprimir una combinación válida
+// Estructura para almacenar resultados de manera thread-safe
+struct ResultadoCombinacion {
+    std::mutex mtx;
+    void agregar(const std::vector<int>& comb) {
+        std::lock_guard<std::mutex> lock(mtx);
         std::cout << "{ ";
-        for (int num : combinacion) {
+        for (int num : comb) {
             std::cout << num << " ";
         }
         std::cout << "}" << std::endl;
-        return;
     }
-    if (objetivo < 0 || indice >= numeros.size()) {
-        return; // No es posible encontrar más combinaciones
+};
+
+class BuscadorCombinaciones {
+private:
+    std::shared_ptr<ResultadoCombinacion> resultados;
+    const std::vector<int>& numeros;
+    std::atomic<size_t> combinacionesEncontradas{ 0 };
+    const size_t CHUNK_SIZE = 1000;
+
+    void buscarCombinacionesRecursivo(int objetivo, std::vector<int>& combinacion, int indice) {
+        if (objetivo == 0) {
+            resultados->agregar(combinacion);
+            combinacionesEncontradas++;
+            return;
+        }
+        if (objetivo < 0 || indice >= numeros.size()) {
+            return;
+        }
+        if (objetivo > 0) {
+            int sumaMinima = numeros[indice];
+            if (sumaMinima > objetivo) {
+                return;
+            }
+        }
+        if (combinacion.capacity() < numeros.size()) {
+            combinacion.reserve(numeros.size());
+        }
+        combinacion.push_back(numeros[indice]);
+        buscarCombinacionesRecursivo(objetivo - numeros[indice], combinacion, indice + 1);
+        combinacion.pop_back();
+        buscarCombinacionesRecursivo(objetivo, combinacion, indice + 1);
     }
 
-    // Explorar con el número actual incluido
-    combinacion.push_back(numeros[indice]);
-    buscarCombinacionesUnicas(numeros, objetivo - numeros[indice], combinacion, indice + 1);
-    combinacion.pop_back();
+public:
+    BuscadorCombinaciones(const std::vector<int>& nums)
+        : numeros(nums), resultados(std::make_shared<ResultadoCombinacion>()) {
+    }
 
-    // Explorar sin el número actual
-    buscarCombinacionesUnicas(numeros, objetivo, combinacion, indice + 1);
+    void buscar(int objetivo, int num_threads) {
+        omp_set_num_threads(num_threads);
+        omp_set_nested(1);
+        omp_set_dynamic(0);
+
+#pragma omp parallel
+        {
+            std::vector<int> combinacionLocal;
+            combinacionLocal.reserve(numeros.size());
+#pragma omp for schedule(dynamic, CHUNK_SIZE)
+            for (int i = 0; i < numeros.size(); ++i) {
+                combinacionLocal.clear();
+                combinacionLocal.push_back(numeros[i]);
+                buscarCombinacionesRecursivo(objetivo - numeros[i], combinacionLocal, i + 1);
+            }
+        }
+    }
+
+    size_t obtenerTotalCombinaciones() const {
+        return combinacionesEncontradas;
+    }
+};
+
+// Función para realizar mediciones múltiples
+std::vector<double> realizarMediciones(BuscadorCombinaciones& buscador, int objetivo, int num_threads, int num_mediciones) {
+    std::vector<double> tiempos;
+    tiempos.reserve(num_mediciones);
+
+    for (int i = 0; i < num_mediciones; ++i) {
+        auto inicio = std::chrono::high_resolution_clock::now();
+        buscador.buscar(objetivo, num_threads);
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion = std::chrono::duration_cast<std::chrono::milliseconds>(fin - inicio);
+        tiempos.push_back(duracion.count());
+    }
+
+    return tiempos;
+}
+
+// Función para calcular estadísticas
+void mostrarEstadisticas(const std::vector<double>& tiempos) {
+    double suma = 0;
+    double min = tiempos[0];
+    double max = tiempos[0];
+
+    for (double tiempo : tiempos) {
+        suma += tiempo;
+        if (tiempo < min) min = tiempo;
+        if (tiempo > max) max = tiempo;
+    }
+
+    double promedio = suma / tiempos.size();
+    std::cout << "Estadísticas de tiempo (ms):" << std::endl;
+    std::cout << "Mínimo: " << min << std::endl;
+    std::cout << "Máximo: " << max << std::endl;
+    std::cout << "Promedio: " << promedio << std::endl;
 }
 
 int main() {
     int tamanioArreglo, objetivo;
-
-    // Entrada por teclado del tamaño del arreglo
     std::cout << "Ingrese el tamaño del arreglo de números: ";
     std::cin >> tamanioArreglo;
 
-    // Generar un vector de números del 1 al tamaño especificado
     std::vector<int> numeros;
+    numeros.reserve(tamanioArreglo);
     for (int i = 1; i <= tamanioArreglo; ++i) {
         numeros.push_back(i);
     }
 
-    // Entrada por teclado del objetivo
     std::cout << "Ingrese el objetivo que desea alcanzar: ";
     std::cin >> objetivo;
 
-    // Medir el tiempo de inicio
-    auto inicio = std::chrono::high_resolution_clock::now();
+    // Obtener número de núcleos disponibles
+    int max_threads = std::thread::hardware_concurrency();
+    int opcion;
+    std::cout << "\nSeleccione el modo de ejecución:" << std::endl;
+    std::cout << "1. Usar todos los núcleos (" << max_threads << " núcleos)" << std::endl;
+    std::cout << "2. Usar la mitad de los núcleos (" << max_threads / 2 << " núcleos)" << std::endl;
+    std::cout << "Opción: ";
+    std::cin >> opcion;
 
-    std::cout << "Buscando combinaciones únicas que sumen " << objetivo << ":" << std::endl;
+    int num_threads = (opcion == 1) ? max_threads : max_threads / 2;
+    const int NUM_MEDICIONES = 50;
 
-    // Paralelizar las búsquedas iniciales
-#pragma omp parallel
-    {
-#pragma omp for
-        for (int i = 0; i < numeros.size(); ++i) {
-            std::vector<int> combinacion; // Cada hilo tiene su propia combinación
-            buscarCombinacionesUnicas(numeros, objetivo - numeros[i], combinacion, i + 1);
-        }
-    }
+    BuscadorCombinaciones buscador(numeros);
 
-    // Medir el tiempo de finalización
-    auto fin = std::chrono::high_resolution_clock::now();
-    auto duracion = std::chrono::duration_cast<std::chrono::milliseconds>(fin - inicio);
+    std::cout << "\nRealizando " << NUM_MEDICIONES << " mediciones con " << num_threads << " núcleos..." << std::endl;
+    auto tiempos = realizarMediciones(buscador, objetivo, num_threads, NUM_MEDICIONES);
 
-    // Mostrar el tiempo de ejecución
-    std::cout << "\nTiempo de ejecución: " << duracion.count() << " milisegundos" << std::endl;
+    std::cout << "\nResultados finales:" << std::endl;
+    std::cout << "Combinaciones encontradas: " << buscador.obtenerTotalCombinaciones() << std::endl;
+    mostrarEstadisticas(tiempos);
 
     return 0;
 }
